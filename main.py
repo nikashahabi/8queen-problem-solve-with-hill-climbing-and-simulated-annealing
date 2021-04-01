@@ -1,10 +1,12 @@
 import random
+import copy
 
 def C2n(n):
     return n * (n-1) / 2
 
 
 class CheckeredPageState:
+
     def __init__(self, checkeredPage):
         self.checkeredPage = checkeredPage
         self.rows = len(self.checkeredPage)
@@ -45,38 +47,7 @@ class CheckeredPageState:
         self.h = h
 
     def getRandomSteepestAscent(self):
-        delta = float("inf")
         neighbors = []
-        # for j in range(self.columns):
-        #     for i in range(self.rows):
-        #         if self.checkeredPage[i][j] == 1:
-        #             deltaneg = self.dicRows[i]-1 + self.dicDiagonal1[i-j]-1 + self.dicDiagonal2[i+j]-1
-        #             ikeep = i
-        #             print(i)
-        #             break
-        #     for i in range(self.rows):
-        #         if self.checkeredPage[i][j] == 0:
-        #             deltaCurrent = self.dicRows[i] + self.dicDiagonal1[i-j] + self.dicDiagonal2[i+j] - deltaneg
-        #             if deltaCurrent <= delta:
-        #                 newCheckPage = self.checkeredPage.copy()
-        #                 newCheckPage[i][j] = 1
-        #                 newCheckPage[ikeep][j] = 0
-        #                 newDicRows = self.dicRows
-        #                 newDicRows[ikeep] -= 1
-        #                 newDicRows[i] += 1
-        #                 newDicDiagonal1 = self.dicDiagonal1
-        #                 newDicDiagonal1[ikeep-j] -= 1
-        #                 newDicDiagonal1[i-j] += 1
-        #                 newDicDiagonal2 = self.dicDiagonal2
-        #                 newDicDiagonal2[ikeep + j] -= 1
-        #                 newDicDiagonal2[i + j] += 1
-        #                 newNeighbor = CheckeredPageState(newCheckPage, newDicRows, newDicDiagonal1, newDicDiagonal2, self.h + deltaCurrent)
-        #                 if deltaCurrent == delta:
-        #                     neighbors.append(newNeighbor)
-        #                 else:
-        #                     delta = deltaCurrent
-        #                     neighbors[:] = []
-        #                     neighbors.append(newNeighbor)
         huristic = float("inf")
         for j in range(self.columns):
             for i in range(self.rows):
@@ -85,57 +56,115 @@ class CheckeredPageState:
                     break
             for i in range(self.rows):
                 if self.checkeredPage[i][j] == 0:
-                    newCheck = self.checkeredPage.copy()
+                    newCheck = copy.deepcopy(self.checkeredPage)
                     newCheck[i][j] = 1
                     newCheck[ikeep][j] = 0
                     neighbor = CheckeredPageState(newCheck)
                     if neighbor.h < huristic:
                         neighbors[:] = []
                         huristic = neighbor.h
-                    elif neighbor.h == huristic:
+                    if neighbor.h == huristic:
                         neighbors.append(neighbor)
         return(random.choice(neighbors))
 
     def getFirstChoice(self):
-        for i in range(self.rows):
-            for j in range(self.columns):
-                'ji'
+        test = [[False for i in range(self.columns)] for j in range(self.rows)]
+        while 1:
+            i = random.randrange(0, self.rows)
+            j = random.randrange(0, self.columns)
+            test[i][j] = True
+            newCheck = copy.deepcopy(self.checkeredPage)
+            newCheck[i][j] = 1
+            for k in range(self.rows):
+                if self.checkeredPage[k][j]:
+                    ikeep = k
+                    break
+            newCheck[ikeep][j] = 0
+            newCheck[i][j] = 1
+            neighbor = CheckeredPageState(newCheck)
+            if neighbor.h < self.h:
+                return neighbor
+            flag = True
+            'checks if we have randomly generated all the successors'
+            for x in test:
+                for y in x:
+                    if y is False:
+                        flag = False
+                        break
+                if flag is False:
+                    break
+            if flag is True:
+                return None
+
+    def printPage(self):
+        for xs in self.checkeredPage:
+            print(" ".join(map(str, xs)))
+
+    def getMove(self, neighbor):
+        test = False
+        for j in range(self.columns):
+            for i in range(self.rows):
+                if self.checkeredPage[i][j] != neighbor.checkeredPage[i][j]:
+                    if self.checkeredPage[i][j] == 1:
+                        istart = i
+                    else:
+                        iend = i
+                    if test is False:
+                        test = True
+                    else:
+                        print("move in column "+ str(j+1) + " from row " + str(istart+1) + " to " + str(iend+1))
+                        break
+
+
+
 
 
 def HillCLimbingSteepestAscent(checkeredPageInitial):
     current = CheckeredPageState(checkeredPageInitial)
-    current.setDic()
-    current.setHeuristic()
-    print(current.dicRows)
-    print(current.dicDiagonal1)
-    print(current.dicDiagonal2)
-    print(current.h)
     while 1:
+        print("current state checkered page:")
+        current.printPage()
+        print("current state h:", current.h)
         neighbor = current.getRandomSteepestAscent()
-        print(neighbor.h)
         if neighbor.h >= current.h:
             if current.h == 0:
-                print("the hill climbing algorithm found a solution")
+                print("the hill climbing algorithm steepest ascent variant found a solution")
+                return True, current
             else:
-                print("the hill climbing algorithm got stuck in local minimum")
-            print(current.checkeredPage)
-            return current
-        print(neighbor.checkeredPage)
+                print("the hill climbing algorithm steepest ascent variant got stuck in local minimum")
+                return False, current
+        current.getMove(neighbor)
         current = neighbor
 
 def HillCLimbingFirstChoice(checkeredPageInitial):
     current = CheckeredPageState(checkeredPageInitial)
     while 1:
+        print("current state checkered page:")
+        current.printPage()
+        print("current state h:", current.h)
         neighbor = current.getFirstChoice()
         if neighbor is None:
             if current.h == 0:
-                print("the hill climbing algorithm found a solution")
+                print("the hill climbing algorithm first choice variant found a solution")
+                return True, current
             else:
-                print("the hill climbing algorithm got stuck in local minimum")
-            print(current.checkeredPage)
-            return current
+                print("the hill climbing algorithm first choice variant got stuck in local minimum")
+                return False, current
+        current.getMove(neighbor)
         current = neighbor
 
+def HillClimbingRandomRestart(dimension):
+    while 1:
+        print("-----------------------------------")
+        print("new start of hill climbing algorithm with random restart")
+        checkeredPage = [[0 for i in range(dimension)] for j in range(dimension)]
+        randNumbers = random.sample(range(0, dimension), dimension)
+        for j in range(dimension):
+            checkeredPage[randNumbers[j]][j] = 1
+        boolean, state = HillCLimbingSteepestAscent(checkeredPage)
+        if boolean:
+            print("the hill climbing algorithm with random restart ended")
+            return state
 
 check = [[0,0,0,0,0,0,0,0],
          [0,0,0,0,0,0,0,0],
@@ -145,7 +174,7 @@ check = [[0,0,0,0,0,0,0,0],
          [0,1,0,0,0,1,0,1],
          [0,0,1,0,0,0,1,0],
          [0,0,0,0,0,0,0,0]]
-HillCLimbingSteepestAscent(check)
+HillClimbingRandomRestart(8)
 
 
 
