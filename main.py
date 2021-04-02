@@ -1,5 +1,6 @@
 import random
 import copy
+import math
 
 def C2n(n):
     return n * (n-1) / 2
@@ -9,8 +10,7 @@ class CheckeredPageState:
 
     def __init__(self, checkeredPage):
         self.checkeredPage = checkeredPage
-        self.rows = len(self.checkeredPage)
-        self.columns = len(self.checkeredPage[0])
+        self.dimension = len(self.checkeredPage)
         self.setDic()
         self.setHeuristic()
 
@@ -18,13 +18,13 @@ class CheckeredPageState:
         dicRows = {}
         dicDiagonal1 = {}
         dicDiagonal2 = {}
-        for i in range(self.rows):
+        for i in range(self.dimension):
             dicRows[i] = 0
-            for j in range(self.columns):
+            for j in range(self.dimension):
                 dicDiagonal1[i-j] = 0
                 dicDiagonal2[i+j] = 0
-        for i in range(self.rows):
-            for j in range(self.columns):
+        for i in range(self.dimension):
+            for j in range(self.dimension):
                 if self.checkeredPage[i][j]:
                     dicRows[i] += 1
                     dicDiagonal1[i-j] += 1
@@ -49,12 +49,12 @@ class CheckeredPageState:
     def getRandomSteepestAscent(self):
         neighbors = []
         huristic = float("inf")
-        for j in range(self.columns):
-            for i in range(self.rows):
+        for j in range(self.dimension):
+            for i in range(self.dimension):
                 if self.checkeredPage[i][j] == 1:
                     ikeep = i
                     break
-            for i in range(self.rows):
+            for i in range(self.dimension):
                 if self.checkeredPage[i][j] == 0:
                     newCheck = copy.deepcopy(self.checkeredPage)
                     newCheck[i][j] = 1
@@ -68,14 +68,14 @@ class CheckeredPageState:
         return(random.choice(neighbors))
 
     def getFirstChoice(self):
-        test = [[False for i in range(self.columns)] for j in range(self.rows)]
+        test = [[False for i in range(self.dimension)] for j in range(self.dimension)]
         while 1:
-            i = random.randrange(0, self.rows)
-            j = random.randrange(0, self.columns)
+            i = random.randrange(0, self.dimension)
+            j = random.randrange(0, self.dimension)
             test[i][j] = True
             newCheck = copy.deepcopy(self.checkeredPage)
             newCheck[i][j] = 1
-            for k in range(self.rows):
+            for k in range(self.dimension):
                 if self.checkeredPage[k][j]:
                     ikeep = k
                     break
@@ -102,8 +102,8 @@ class CheckeredPageState:
 
     def getMove(self, neighbor):
         test = False
-        for j in range(self.columns):
-            for i in range(self.rows):
+        for j in range(self.dimension):
+            for i in range(self.dimension):
                 if self.checkeredPage[i][j] != neighbor.checkeredPage[i][j]:
                     if self.checkeredPage[i][j] == 1:
                         istart = i
@@ -115,8 +115,19 @@ class CheckeredPageState:
                         print("move in column "+ str(j+1) + " from row " + str(istart+1) + " to " + str(iend+1))
                         break
 
-
-
+    def randomSuccessor(self):
+        j = random.randrange(0, self.dimension)
+        while 1:
+            i = random.randrange(0, self.dimension)
+            if self.checkeredPage[i][j] != 1:
+                break
+        for k in range(self.dimension):
+            if self.checkeredPage[k][j]:
+                break
+        newCheckeredPage = copy.deepcopy(self.checkeredPage)
+        newCheckeredPage[i][j] = 1
+        newCheckeredPage[k][j] = 0
+        return CheckeredPageState(newCheckeredPage)
 
 
 def HillCLimbingSteepestAscent(checkeredPageInitial):
@@ -153,18 +164,49 @@ def HillCLimbingFirstChoice(checkeredPageInitial):
         current.getMove(neighbor)
         current = neighbor
 
+
+def getRandomCheckeredPage(dimension):
+    checkeredPage = [[0 for i in range(dimension)] for j in range(dimension)]
+    randNumbers = random.sample(range(0, dimension), dimension)
+    for j in range(dimension):
+        checkeredPage[randNumbers[j]][j] = 1
+    return checkeredPage
+
 def HillClimbingRandomRestart(dimension):
     while 1:
         print("-----------------------------------")
         print("new start of hill climbing algorithm with random restart")
-        checkeredPage = [[0 for i in range(dimension)] for j in range(dimension)]
-        randNumbers = random.sample(range(0, dimension), dimension)
-        for j in range(dimension):
-            checkeredPage[randNumbers[j]][j] = 1
+        checkeredPage = getRandomCheckeredPage(dimension)
         boolean, state = HillCLimbingSteepestAscent(checkeredPage)
         if boolean:
             print("the hill climbing algorithm with random restart ended")
             return state
+
+def SimulatedAnnealing(checkeredPageInitial):
+    current = CheckeredPageState(checkeredPageInitial)
+    T = 4000
+    while 1:
+        T *= 0.99
+        if T < 0.0001:
+            print("final state checkered page:")
+            current.printPage()
+            print("final state h:", current.h)
+            if current.h == 0:
+                print("the simulated annealing found a solution")
+                return True, current
+            else:
+                print("the simulated annealing could not find the solution")
+                return False, current
+        next = current.randomSuccessor()
+        deltaE = current.h - next.h
+        if deltaE > 0:
+            current = next
+        else:
+            rand = random.uniform(0, 1)
+            probability = math.exp(deltaE / T)
+            if rand <= probability:
+                current = next
+
 
 check = [[0,0,0,0,0,0,0,0],
          [0,0,0,0,0,0,0,0],
@@ -174,7 +216,8 @@ check = [[0,0,0,0,0,0,0,0],
          [0,1,0,0,0,1,0,1],
          [0,0,1,0,0,0,1,0],
          [0,0,0,0,0,0,0,0]]
-HillClimbingRandomRestart(8)
+
+SimulatedAnnealing(check)
 
 
 
