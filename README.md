@@ -1,0 +1,3 @@
+# Using Simulated Annealing and Hill Climbing Algorithm to Solve the 8-Queen Problem
+
+The 8-queen Problem is solved with 3 different variants of the Hill Climbing Algorithm (Steepest Ascent, First Choice and Hill Climbing with Random Restart) and with Simulated Annealing. The initial checkered page (queen cells are showed with 1) or its dimention is passed to the methods when necessary. As in most Local Search Algorithms, we have used a complete-sate formulation of the problem. Meaning that in each state, all of the 8 queens are in the checkered page, and every column has exactly one queen in it. The queens are then allowed to move in their own column, making 8*7 successor for each state. 
